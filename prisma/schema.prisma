@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model HealthCareFacility {
+  uuid           String          @id @default(uuid())
+  shifts         Shift[]
+  name           String
+  blockedWorkers BlockedWorker[]
+}
+
+model Worker {
+  uuid                String            @id @default(uuid())
+  shiftAssignments    ShiftAssignment[]
+  firstName           String
+  lastName            String
+  blockedAtFacilities BlockedWorker[]
+}
+
+model Shift {
+  uuid             String             @id @default(uuid())
+  facilityUuid     String
+  facility         HealthCareFacility @relation(fields: [facilityUuid], references: [uuid])
+  shiftAssignments ShiftAssignment[]
+  description      String
+  baseHourlyRate   Int
+  createdAt        DateTime
+  updatedAt        DateTime
+  startTime        DateTime
+  endTime          DateTime
+  workerSlots      Int
+  blockedWorkers   BlockedWorker[]
+}
+
+model ShiftAssignment {
+  shiftUuid  String
+  workerUuid String
+  shift      Shift  @relation(fields: [shiftUuid], references: [uuid])
+  worker     Worker @relation(fields: [workerUuid], references: [uuid])
+  rating     Int?
+
+  @@id([shiftUuid, workerUuid])
+}
+
+model BlockedWorker {
+  shiftUuid    String
+  workerUuid   String
+  facilityUuid String
+  shift        Shift              @relation(fields: [shiftUuid], references: [uuid])
+  worker       Worker             @relation(fields: [workerUuid], references: [uuid])
+  facility     HealthCareFacility @relation(fields: [facilityUuid], references: [uuid])
+  createdAt    DateTime
+  blockReason  String
+
+  @@id([facilityUuid, workerUuid])
+}
