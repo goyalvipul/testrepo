@@ -9,10 +9,6 @@ import { prisma } from "../prismaClient";
 
 type Timestamps = "createdAt" | "updatedAt";
 
-type GenericSuccessResponse = {
-  status: "ok";
-};
-
 export function listAllShifts(): Promise<Shift[]> {
   return prisma.shift.findMany();
 }
@@ -20,10 +16,7 @@ export function listAllShifts(): Promise<Shift[]> {
 export function listHealthCareFacilityShifts(
   facilityUuid: HealthCareFacility["uuid"],
 ): Promise<Shift[]> {
-  return prisma.shift.findMany({
-    where: { facilityUuid },
-    include: { shiftAssignments: true },
-  });
+  return prisma.shift.findMany({ where: { facilityUuid } });
 }
 
 export function listWorkerShifts(
@@ -61,48 +54,4 @@ export function applyToShift(
       worker: { connect: { uuid: workerUuid } },
     },
   });
-}
-
-export function rateWorker(
-  workerUuid: Worker["uuid"],
-  shiftUuid: Shift["uuid"],
-  rating: number,
-): Promise<ShiftAssignment> {
-  return prisma.shiftAssignment.update({
-    where: {
-      shiftUuid_workerUuid: {
-        shiftUuid,
-        workerUuid,
-      },
-    },
-    data: { rating },
-  });
-}
-
-export async function blockWorker(
-  workerUuid: Worker["uuid"],
-  shiftUuid: Shift["uuid"],
-  blockReason: string,
-): Promise<GenericSuccessResponse> {
-  const shift = await prisma.shift.findUniqueOrThrow({
-    where: {
-      uuid: shiftUuid,
-    },
-  });
-  const facility = await prisma.healthCareFacility.findUniqueOrThrow({
-    where: {
-      uuid: shift.facilityUuid,
-    },
-  });
-  await prisma.blockedWorker.create({
-    data: {
-      facilityUuid: facility.uuid,
-      shiftUuid,
-      workerUuid,
-      blockReason,
-      createdAt: new Date(),
-    },
-  });
-
-  return { status: "ok" };
 }
